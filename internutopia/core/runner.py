@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Dict, List, Optional, Tuple, Union
 
 from internutopia.core.config import Config, DistributedConfig, TaskCfg
@@ -481,9 +482,12 @@ class SimulatorRunner:
         headless = self.config.simulator.headless
         native = self.config.simulator.native
         webrtc = self.config.simulator.webrtc
-        self._simulation_app = SimulationApp(
-            {'headless': headless, 'anti_aliasing': 0, 'hide_ui': False, 'multi_gpu': False}
-        )
+        app_config = {'headless': headless, 'anti_aliasing': 0, 'hide_ui': False, 'multi_gpu': False}
+        # ISAAC_ACTIVE_GPU: 렌더 GPU (물리 GPU 번호). 렌더러는 CUDA_VISIBLE_DEVICES 를 따르지 않아 없으면 모든 프로세스가 GPU 0 에서 그린다
+        if os.environ.get('ISAAC_ACTIVE_GPU', '').strip():
+            app_config['active_gpu'] = int(os.environ['ISAAC_ACTIVE_GPU'])
+            app_config['physics_gpu'] = int(os.environ['ISAAC_ACTIVE_GPU'])
+        self._simulation_app = SimulationApp(app_config)
         self._simulation_app._carb_settings.set('/physics/cooking/ujitsoCollisionCooking', False)
         log.debug('SimulationApp init done')
 
